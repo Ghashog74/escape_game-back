@@ -1,12 +1,17 @@
+import locale
+
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from .models import Game
+from datetime import datetime
+
 
 User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username', 'email')
+        fields = ('username', 'email', 'created_at')
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -24,3 +29,34 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         #user.set_password(validated_data['password'])
         user.save()
         return user
+
+class GameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Game
+        fields = ('start_date', 'session_start', 'time_spend', 'hint_left', 'progress', 'game_code', 'status', 'p1', 'p2')
+
+
+class GameDataSerializer(serializers.ModelSerializer):
+    p2_username = serializers.SerializerMethodField()
+    start_date = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Game
+        fields = ('start_date', 'time_spend', 'status', 'p2_username')
+
+    def get_p2_username(self, obj):
+        request = self.context.get('request')
+        if not request:
+            return None
+        current_user = request.user
+        if obj.p1 == current_user:
+            return obj.p2.username if obj.p2 else None
+        else:
+            return obj.p1.username if obj.p1 else None
+
+    def get_start_date(self, obj):
+        try:
+            locale.setlocale(locale.LC_TIME, 'fr_FR.UTF-8')  # Linux/Mac
+        except locale.Error:
+            locale.setlocale(locale.LC_TIME, '')
+        return obj.start_date.strftime('%-d %B %Y')

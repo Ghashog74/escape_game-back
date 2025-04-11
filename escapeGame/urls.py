@@ -20,4 +20,5 @@ from django.urls import path, include
 urlpatterns = [
     path('echos/admin/', admin.site.urls),
     path('echos/api/', include('api.urls')),
+    #path('echos/multi/', include('multi.urls'))
 ]

@@ -1,10 +1,15 @@
+from itertools import count
+from modulefinder import ReplacePackage
+
 from django.shortcuts import render
 from django.contrib.auth import get_user_model
-from .serializer import UserSerializer, UserRegistrationSerializer
+from .serializer import UserSerializer, UserRegistrationSerializer, GameSerializer, GameDataSerializer
 User = get_user_model()
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
+from .models import Game
+from django.db.models import Q
 
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -107,3 +112,37 @@ def get_user(request):
     serializer = UserSerializer(user)
 
     return Response({'user': serializer.data})
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_game(request):
+    data = request.data
+    data['time_spend'] = 0
+    data['hint_left'] = 3
+    data['progress'] = 0
+    data['status'] = "progress"
+    data['p1'] = request.user.id
+    print(data)
+    serializer = GameSerializer(data=data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data)
+    return Response(serializer.errors)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_game_history(request):
+    user = request.user
+    games = Game.objects.filter(Q(p1=user) | Q(p2=user))
+    serializer = GameDataSerializer(games, many=True, context={'request': request})
+    return Response({'games': serializer.data})
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def update_user(request):
+    user = request.user
+    serializer = UserSerializer(user, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data)
+    return Response(serializer.errors)
