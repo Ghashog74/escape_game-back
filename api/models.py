@@ -43,7 +43,7 @@ class Game (models.Model):
     game_code = models.IntegerField()
     status = models.CharField()
     p1 = models.ForeignKey('api.User', on_delete=models.CASCADE, related_name="game_as_p1")
-    p2 = models.ForeignKey('api.User', on_delete=models.CASCADE, related_name="game_as_p2")
+    p2 = models.ForeignKey('api.User', on_delete=models.CASCADE, related_name="game_as_p2", blank=True, null=True)
 
 class Enigmes (models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)

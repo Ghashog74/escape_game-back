@@ -1,4 +1,5 @@
 from itertools import count
+from logging import NullHandler
 from modulefinder import ReplacePackage
 
 from django.shortcuts import render
@@ -116,6 +117,10 @@ def get_user(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_game(request):
+    game = Game.objects.filter(Q(game_code=request.data["game_code"]))
+    print(game)
+    if game.count():
+        return(Response({"success": False,"error": "game already exist"}))
     data = request.data
     data['time_spend'] = 0
     data['hint_left'] = 3
@@ -126,14 +131,14 @@ def create_game(request):
     serializer = GameSerializer(data=data)
     if serializer.is_valid():
         serializer.save()
-        return Response(serializer.data)
+        return Response({"success": True})
     return Response(serializer.errors)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_game_history(request):
     user = request.user
-    games = Game.objects.filter(Q(p1=user) | Q(p2=user))
+    games = Game.objects.filter((Q(p1=user) | Q(p2=user)) & ~Q(p2=None))
     serializer = GameDataSerializer(games, many=True, context={'request': request})
     return Response({'games': serializer.data})
 
@@ -146,3 +151,74 @@ def update_user(request):
         serializer.save()
         return Response(serializer.data)
     return Response(serializer.errors)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_active_game(request):
+    user = request.user
+    activeGame = Game.objects.filter((Q(p1=user) | Q(p2=user)) & Q(status="progress"))
+    if activeGame.count():
+        serializer = GameDataSerializer(activeGame[0], context={'request': request})
+        if serializer.data["p2_username"]:
+            p2name = serializer.data["p2_username"]
+        else:
+            p2name = "none"
+        return Response({
+            "active": True,
+            "game_code": activeGame[0].game_code,
+            "p2": p2name
+        })
+    return Response({
+        "active": False
+    })
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def game_exist(request):
+    if(request.data["game_code"] == '' or (str(request.data["game_code"]).__len__()) != 6):
+        return Response({"exist": False})
+    activeGame = Game.objects.filter(Q(game_code=request.data["game_code"]) & Q(status="progress") & Q(p2=None))
+    if activeGame.count():
+        return Response({"exist": True})
+    else:
+        return Response({"exist": False})
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def join_game(request):
+    user = User.objects.get(id=request.user.id)
+    game = Game.objects.get(game_code=request.data['game_code'])
+    data = {'p2': user.id}
+    serializer = GameSerializer(game, data=data, partial=True)
+    if(serializer.is_valid()):
+        serializer.save()
+        return Response(serializer.data)
+    return Response(serializer.errors)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def delete_game(request):
+    game = Game.objects.get(game_code=request.data['game_code'])
+    game.delete()
+    return Response({
+        'success': 'game deleted successfully'
+    })
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def update_game(request):
+    game = Game.objects.get(game_code=request.data['game_code'])
+    serializer = GameSerializer(game, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data)
+    return Response(serializer.errors)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def get_game_info(request):
+    game = Game.objects.get(game_code=request.data['game_code'])
+    serializer = GameSerializer(game)
+
+    return Response(serializer.data)
