@@ -110,7 +110,40 @@ class ChatConsumer(WebsocketConsumer):
                     'sender_channel_name': self.channel_name
                 }
             )
+        elif subject == 'update_response':
+            async_to_sync(self.channel_layer.group_send)(
+                self.room_group_name,
+                {
+                    'type': 'update_response_message',
+                    'sender_channel_name': self.channel_name,
+                    'response': data['response']
+                }
+            )
+        elif subject == 'update_progress':
+            async_to_sync(self.channel_layer.group_send)(
+                self.room_group_name,
+                {
+                    'type': 'update_progress_message',
+                    'sender_channel_name': self.channel_name,
+                    'progress': data['progress']
+                }
+            )
 
+    def update_progress_message(self, event):
+        if self.channel_name != event['sender_channel_name']:
+            self.send(text_data=json.dumps({
+                'success': True,
+                'subject': 'update_progress',
+                'progress': event['progress']
+            }))
+
+    def update_response_message(self, event):
+        if self.channel_name != event['sender_channel_name']:
+            self.send(text_data=json.dumps({
+                'success': True,
+                'subject': 'update_response',
+                'response': event['response']
+            }))
 
     def continue_message(self, event):
         if self.channel_name != event['sender_channel_name']:
