@@ -4,12 +4,12 @@ from modulefinder import ReplacePackage
 
 from django.shortcuts import render
 from django.contrib.auth import get_user_model
-from .serializer import UserSerializer, UserRegistrationSerializer, GameSerializer, GameDataSerializer
+from .serializer import UserSerializer, UserRegistrationSerializer, GameSerializer, GameDataSerializer, EnigmeSerializer
 User = get_user_model()
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
-from .models import Game
+from .models import Game, Enigmes
 from django.db.models import Q
 
 from rest_framework_simplejwt.views import (
@@ -118,7 +118,6 @@ def get_user(request):
 @permission_classes([IsAuthenticated])
 def create_game(request):
     game = Game.objects.filter(Q(game_code=request.data["game_code"]))
-    print(game)
     if game.count():
         return(Response({"success": False,"error": "game already exist"}))
     data = request.data
@@ -219,6 +218,37 @@ def update_game(request):
 @permission_classes([IsAuthenticated])
 def get_game_info(request):
     game = Game.objects.get(game_code=request.data['game_code'])
-    serializer = GameSerializer(game)
+    serializer = GameSerializer(game, context={'request': request})
 
     return Response(serializer.data)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def get_enigme(request):
+    try:
+        enigme = Enigmes.objects.get(progress=request.data['progress'])
+        serializer = EnigmeSerializer(enigme)
+        return Response({
+            'enigme': serializer.data
+        })
+    except:
+        return Response({
+            'error': 'aucune énigme trouver'
+        })
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def check_enigme(request):
+    try:
+        enigme = Enigmes.objects.get(progress=request.data['progress'])
+        serializer = EnigmeSerializer(enigme)
+        if serializer.data['solution'].lower() == request.data['reponse'].lower():
+            return Response({'correct': True})
+        return Response({'correct': False})
+    except:
+        return Response({
+            'error': 'aucune énigme trouver'
+        })
+
+
+

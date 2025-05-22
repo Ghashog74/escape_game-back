@@ -47,10 +47,12 @@ class Game (models.Model):
 
 class Enigmes (models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
-    question_p1 = models.TextField()
-    question_p2 = models.TextField()
+    text_p1 = models.TextField()
+    text_p2 = models.TextField()
+    question = models.TextField()
     solution = models.TextField()
     hint = models.TextField()
     type = models.CharField()
     name = models.CharField()
     description = models.TextField()
+    progress = models.IntegerField()

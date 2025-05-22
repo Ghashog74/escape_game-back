@@ -1,8 +1,6 @@
-from sys import path_hooks
-
 from django.urls import path
 from .views import get_user, CustomTokenObtainPairView, CustomTokenRefreshView, logout, is_authenticated, register, \
-    create_game, get_game_history, update_user, get_active_game, game_exist, join_game, delete_game, get_game_info, update_game
+    create_game, get_game_history, update_user, get_active_game, game_exist, join_game, delete_game, get_game_info, update_game, get_enigme, check_enigme
 
 urlpatterns = [
     path('token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
@@ -19,5 +17,7 @@ urlpatterns = [
     path('join_game/', join_game),
     path('delete_game/', delete_game),
     path('get_game_info/', get_game_info),
-    path('update_game/', update_game)
+    path('update_game/', update_game),
+    path('get_enigme/', get_enigme),
+    path('check_enigme/', check_enigme)
 ]
